@@ -16,69 +16,54 @@ import java.io.File;
 public class MainActivity extends Activity {
 
     private TableLayout mRoot;
-    private TextView mIntTxt, mExtTxt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mRoot = (TableLayout)findViewById(R.id.table_root);
-        mIntTxt = (TextView)findViewById(R.id.textViewInt);
-        mExtTxt = (TextView)findViewById(R.id.textViewExt);
-
         fillTxt();
     }
 
     private void fillTxt() {
-        final TextView extTxt = new TextView(this);
-        extTxt.setText("external KK api");
-        mRoot.addView(extTxt);
-
-        mIntTxt.setText("" + getFilesDir());
-        //not null if you want the path used for media like pics, videos,...
-        mExtTxt.setText("" + getExternalFilesDir(null));
+        addHeader("android.app.Context API");
+        addRow("getFilesDir(): ", getFilesDir().toString());
+        addRow("getExternalFilesDir(): ", getExternalFilesDir(null).toString());
+        addHeader("[4.4+] android.app.Context.getExternalFilesDirs()");
         final File[] files = getExternalFilesDirs(null);
         for(int i = 0; i < files.length; i++) {
-            final TableRow tr = new TableRow(this);
-            final TextView txtKey = new TextView(this);
-            txtKey.setText("" + i + ":");
-            final TextView txtValue = new TextView(this);
-            txtValue.setText(files[i].toString());
-            tr.addView(txtKey);
-            tr.addView(txtValue);
-            mRoot.addView(tr);
+            addRow(i + ":  ", files[i].toString());
         }
-        /*final TextView cacheTxt = new TextView(this);
-        cacheTxt.setText("cache");
-        mRoot.addView(cacheTxt);
-        final TableRow tr = new TableRow(this);
-        final TextView c2 = new TextView(this);
-        c2.setText("Cache   ");
-        final TextView c2val = new TextView(this);
-        c2val.setText("" + getExternalCacheDir());
-        tr.addView(c2);
-        tr.addView(c2val);
-        mRoot.addView(tr);*/
-
-        addHeader("Obb Honeycomb");
-        addRow("obb (api 3.0)   ", getObbDir().toString());
-        addHeader("Obb KK");
+        addRow("Context.getObbDir(): ", getObbDir().toString());
+        addHeader("[4.4+] Context.getObbDirs()");
         File[] obbDirs = getObbDirs();
         for(int i = 0; i < obbDirs.length; i++) {
             addRow(i + ":  ", obbDirs[i].toString());
         }
-        addHeader("Environment API");
-        addRow("Env   ", Environment.getExternalStorageDirectory().toString());
-        addRow("Data   ", Environment.getDataDirectory().toString());
-        addRow("Root   ", Environment.getRootDirectory().toString());
-
-        //not null, type required
-        //addRow("Ext public", Environment.getExternalStoragePublicDirectory(null).toString());
-
-        addHeader("Characteristics of external");
-        addRow("emulated?   ", "" + Environment.isExternalStorageEmulated());
-        addRow("removable?   ", "" + Environment.isExternalStorageRemovable());
-
+        addHeader("\nandroid.os.Environment API");
+        addRow("getExternalStorageDirectory(): ", Environment.getExternalStorageDirectory().toString());
+        addRow("getExternalStorageState(): ", Environment.getExternalStorageState());
+        addRow("getDownloadCacheDirectory(): ", Environment.getDownloadCacheDirectory().toString());
+        addRow("getDataDirectory(): ", Environment.getDataDirectory().toString());
+        addRow("getRootDirectory(): ", Environment.getRootDirectory().toString());
+        addRow("isExternalStorageEmulated(): ", "" + Environment.isExternalStorageEmulated());
+        addRow("isExternalStorageRemovable(): ", "" + Environment.isExternalStorageRemovable());
+        addHeader("[5.0+] isExternalStorageEmulated(File path) - OBBs");
+        for(int i = 0; i < obbDirs.length; i++) {
+            addRow(i + ":  ", "" + Environment.isExternalStorageEmulated(obbDirs[i]));
+        }
+        addHeader("[5.0+] isExternalStorageRemovable(File path) - OBBs");
+        for(int i = 0; i < obbDirs.length; i++) {
+            addRow(i + ":  ", "" + Environment.isExternalStorageRemovable(obbDirs[i]));
+        }
+        addHeader("[5.0+] isExternalStorageEmulated(File path) - External paths");
+        for(int i = 0; i < files.length; i++) {
+            addRow(i + ":  ", "" + Environment.isExternalStorageEmulated(files[i]));
+        }
+        addHeader("[5.0+] isExternalStorageRemovable(File path) - External paths");
+        for(int i = 0; i < files.length; i++) {
+            addRow(i + ":  ", "" + Environment.isExternalStorageRemovable(files[i]));
+        }
     }
 
     private void addHeader(String title) {
