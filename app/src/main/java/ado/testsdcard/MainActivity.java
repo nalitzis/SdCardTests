@@ -1,9 +1,10 @@
 package ado.testsdcard;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,17 +35,21 @@ public class MainActivity extends Activity {
     private void fillTxt() {
         addHeader("android.app.Context API");
         addRow("getFilesDir(): ", getFilesDir().toString());
-        addRow("getExternalFilesDir(): ", getExternalFilesDir(null).toString());
-        addHeader("[4.4+] android.app.Context.getExternalFilesDirs()");
-        final File[] files = getExternalFilesDirs(null);
-        for(int i = 0; i < files.length; i++) {
-            addRow(i + ":  ", files[i].toString());
+        final File getExtFilesDirPath = getExternalFilesDir(null);
+        if(getExtFilesDirPath != null) {
+            addRow("getExternalFilesDir(null): ", getExternalFilesDir(null).toString());
+        } else {
+            addRow("getExternalFilesDir(null): ", "NOT AVAILABLE");
+
+        }
+        File[] files = null;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            files = getFiles();
         }
         addRow("Context.getObbDir(): ", getObbDir().toString());
-        addHeader("[4.4+] Context.getObbDirs()");
-        File[] obbDirs = getObbDirs();
-        for(int i = 0; i < obbDirs.length; i++) {
-            addRow(i + ":  ", obbDirs[i].toString());
+        File [] obbDirs = null;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            obbDirs = getObbsFiles();
         }
         addHeader("\nandroid.os.Environment API");
         addRow("getExternalStorageDirectory(): ", Environment.getExternalStorageDirectory().toString());
@@ -54,6 +59,47 @@ public class MainActivity extends Activity {
         addRow("getRootDirectory(): ", Environment.getRootDirectory().toString());
         addRow("isExternalStorageEmulated(): ", "" + Environment.isExternalStorageEmulated());
         addRow("isExternalStorageRemovable(): ", "" + Environment.isExternalStorageRemovable());
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            fillIsExternalStorageProperties(obbDirs, files);
+        }
+
+        addHeader("\nandroid.os.StatFs API - available space");
+        addRow("size of getFilesDir(): ", "" + printSize(getFilesDir()) + " MB");
+        if(getExtFilesDirPath != null) {
+            addRow("size of getExternalFilesDir(null): ", "" + printSize(getExternalFilesDir(null)) + " MB");
+        } else {
+            addRow("size of getExternalFilesDir(null): ", "NOT AVAILABLE");
+        }
+        addRow("size of Environment.getDataDirectory(): ", "" + printSize(Environment.getDataDirectory()) + " MB");
+        addRow("size of Environment.getExternalStorageDirectory(): ", "" + printSize(Environment.getExternalStorageDirectory()) + " MB");
+
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    private File[] getObbsFiles() {
+        addHeader("[4.4+] Context.getObbDirs()");
+        File[] obbDirs = getObbDirs();
+        for(int i = 0; i < obbDirs.length; i++) {
+            addRow(i + ":  ", obbDirs[i].toString());
+        }
+        return obbDirs;
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    private File[] getFiles() {
+        addHeader("[4.4+] android.app.Context.getExternalFilesDirs()");
+        final File[] files = getExternalFilesDirs(null);
+        for(int i = 0; i < files.length; i++) {
+            addRow(i + ":  ", files[i].toString());
+        }
+        return files;
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void fillIsExternalStorageProperties(final File[] obbDirs, final File[] files) {
+        if(obbDirs == null || files == null) {
+            return;
+        }
         addHeader("[5.0+] isExternalStorageEmulated(File path) - OBBs");
         for(int i = 0; i < obbDirs.length; i++) {
             addRow(i + ":  ", "" + Environment.isExternalStorageEmulated(obbDirs[i]));
@@ -70,19 +116,26 @@ public class MainActivity extends Activity {
         for(int i = 0; i < files.length; i++) {
             addRow(i + ":  ", "" + Environment.isExternalStorageRemovable(files[i]));
         }
-
-        addHeader("\nandroid.os.StatFs API - available space");
-        addRow("[4.3] size of getFilesDir(): ", "" + printSize(getFilesDir()) + " MB");
-        addRow("[4.3] size of getExternalFilesDir(null): ", "" + printSize(getExternalFilesDir(null)) + " MB");
-        addRow("[4.3] size of Environment.getDataDirectory(): ", "" + printSize(Environment.getDataDirectory()) + " MB");
-        addRow("[4.3] size of Environment.getExternalStorageDirectory(): ", "" + printSize(Environment.getExternalStorageDirectory()) + " MB");
-
     }
 
+
     private long getSizeBytes(final File path) {
-        final StatFs stat = new StatFs(path.getPath());
-        long availableBytes = stat.getAvailableBytes();
+        long availableBytes;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            final StatFs stat = new StatFs(path.getPath());
+            availableBytes = stat.getAvailableBytes();
+        } else {
+            availableBytes = getLegacySizeBytes(path);
+        }
         return availableBytes;
+    }
+
+    @SuppressWarnings("deprecation")
+    private long getLegacySizeBytes(final File path) {
+        final StatFs stat = new StatFs(path.getPath());
+        long availableBlocks = stat.getAvailableBlocks();
+        long blockSize = stat.getBlockSize();
+        return availableBlocks * blockSize;
     }
 
     private float toMB(final long bytes) {
